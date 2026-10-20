@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Request System</title>
+</head>
+<body>
+    <h1>Maintenance Request System</h1>
+
+    <!-- adding new request form -->
+    <div class="addingnewreq-form">
+        <h2>Adding new Request</h2>
+        <input type="text" id="requester" placeholder="Requester Name">
+        <input type="text" id="location" placeholder="Location">
+        <input type="text" id="problem" placeholder="Problem Description">
+        <label for="priority">Priority:</label>
+        <select id="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+        <input type="text" id="status" value="Pending" disabled>
+        <button id="add-request" onclick="addRequest()">Add Request</button>
+    </div>
+
+    <div class="searchreq-section">
+        <h2>Search Requests by ID</h2>
+        <input type="text" id="search-id" placeholder="Enter Request ID">
+        <button id="search-request" onclick="searchRequest()">Search Request</button>
+        <button id="fetch-all-requests" onclick="fetchAllRequests()">Show All Requests</button>
+
+        <div id="search-message" style="margin-top: 5px;"></div>
+    </div>
+
+    <!-- table to display requests -->
+    <div class="request-table">
+        <h2>Maintenance Requests</h2>
+        <table id="requests-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Requester</th>
+                    <th>Location</th>
+                    <th>Problem</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="requests-tbody">
+                <!-- Requests will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <script>
+            const API_URL = '/api/requests';
+
+            const priorityRank = {
+                'high': 1,
+                'medium': 2,
+                'low': 3
+            };
+
+            // Fetch all requests
+            async function fetchAllRequests() {
+                // Optional chaining (?.) prevents crashes if the element is null
+                const searchMsg = document.getElementById('search-message');
+                if (searchMsg) searchMsg.innerText = '';
+
+                const searchInput = document.getElementById('search-id');
+                if (searchInput) searchInput.value = '';
+
+                try {
+                    const res = await fetch(API_URL);
+                    let requests = await res.json();
+
+                    requests.sort((a, b) => {
+                        const priorityA = priorityRank[String(a.priority).toLowerCase()] || 99;
+                        const priorityB = priorityRank[String(b.priority).toLowerCase()] || 99;
+                        return priorityA - priorityB;
+                    });
+
+                    renderTable(requests);
+                } catch (error) {
+                    console.error('Error fetching requests:', error);
+                }
+            }
+
+            // Render records into table
+            function renderTable(requests) {
+                const tbody = document.getElementById('requests-tbody');
+                tbody.innerHTML = '';
+
+                requests.forEach(req => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${req.id}</td>
+                        <td>${req.requester}</td>
+                        <td>${req.location}</td>
+                        <td>${req.problem}</td>
+                        <td>${req.priority}</td>
+                        <td>${req.status}</td>   
+                        <td><button onclick="deleteRequest(${req.id})">Delete</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // Search by numeric ID
+            async function searchRequest() {
+                const searchId = document.getElementById('search-id').value.trim();
+                const messageDiv = document.getElementById('search-message');
+
+                if (!searchId) {
+                    fetchAllRequests();
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_URL}/${searchId}`);
+
+                    if (res.status === 404) {
+                        messageDiv.style.color = 'red';
+                        messageDiv.innerText = 'Request not found.';
+                        renderTable([]);
+                    } else {
+                        const request = await res.json();
+                        messageDiv.style.color = 'green';
+                        messageDiv.innerText = 'Request found.';
+                        renderTable([request]);
+                    }
+                } catch (error) {
+                    console.error('Error searching request:', error);
+                }
+            }
+
+            // Add new request
+            async function addRequest() {
+                const requester = document.getElementById('requester').value.trim();
+                const location = document.getElementById('location').value.trim();
+                const problem = document.getElementById('problem').value.trim();
+                const priority = document.getElementById('priority').value;
+                const status = 'Pending';
+
+                if (!requester || !location || !problem || !priority) {
+                    alert("Please fill in all fields.");
+                    return;
+                }
+
+                const newRequest = { requester, location, problem, priority, status };
+
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newRequest)
+                    });
+
+                    if (res.ok) {
+                        alert("Request added successfully!");
+
+                        document.getElementById('requester').value = '';
+                        document.getElementById('location').value = '';
+                        document.getElementById('problem').value = '';
+                        document.getElementById('priority').value = 'high';
+
+                        fetchAllRequests();
+                    } else {
+                        alert("Failed to add request.");
+                    }
+                } catch (error) {
+                    console.error('Error adding request:', error);
+                }
+            }
+
+            // Delete request by numeric ID
+            async function deleteRequest(id) {
+                if (!confirm(`Are you sure you want to delete request ID ${id}?`)) return;
+
+                try {
+                    const res = await fetch(`${API_URL}/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (res.ok) {
+                        alert("Request deleted successfully!");
+                        fetchAllRequests();
+                    } else {
+                        alert("Failed to delete request.");
+                    }
+                } catch (error) {
+                    console.error('Error deleting request:', error);
+                }
+            }
+
+            window.onload = fetchAllRequests;
+        </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+  {
+    "id": 2,
+    "requester": "Jane Smith",
+    "location": "Building B, Floor 1",
+    "problem": "Broken window in office",
+    "priority": "high",
+    "status": "Pending"
+  },
+  {
+    "id": 3,
+    "requester": "Mike Johnson",
+    "location": "Building C, Floor 3",
+    "problem": "Air conditioning not working",
+    "priority": "low",
+    "status": "Pending"
+  },
+  {
+    "id": 4,
+    "requester": "carmela",
+    "location": "cebu",
+    "problem": "banan",
+    "priority": "low",
+    "status": "Pending"
+  }
+]
