@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "visitor_name": "John Doe",
+    "purpose": "Business Meeting",
+    "person_to_visit": "Alice Smith",
+    "visit_date": "2026-10-21",
+    "status": "Inside"
+  },
+  {
+    "id": 2,
+    "visitor_name": "Jane Wilson",
+    "purpose": "Package Delivery",
+    "person_to_visit": "Bob Johnson",
+    "visit_date": "2026-10-21",
+    "status": "Inside"
+  },
+  {
+    "id": 4,
+    "visitor_name": "carmela",
+    "purpose": "banan",
+    "person_to_visit": "mr banana",
+    "visit_date": "2026-10-22",
+    "status": "Inside"
+  }
+]

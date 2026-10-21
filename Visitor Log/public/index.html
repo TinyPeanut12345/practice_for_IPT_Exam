@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Log System</title>
+</head>
+<body>
+    <h1>Visitor Log System</h1>
+
+    <!-- adding a new visitor -->
+    <div class="adding_new_visitor">
+        <input type="text" placeholder="Visitor Name" id="visitor_name">
+        <input type="text" placeholder="Purpose of Visit" id="purpose">
+        <input type="text" placeholder="Person to Visit" id="person_to_visit">
+        <input type="date" placeholder="Visit Date" id="visit_date">
+        <input type="text" placeholder="Status" id="status" value="Inside" disabled>
+        <button id="add_visitor" onclick="addnewvisitor()">Add Visitor</button>
+    </div>
+
+    <!-- searching for visitors -->
+    <div class="search_section">
+        <input type="text" placeholder="Search Visitors" id="search_visitors">
+        <button onclick="searchVisitors()">Search</button>
+        <button onclick="fetchAllVisitor()">Show all Visitors</button>
+
+        <div id="search-message" style="margin-top: 5px;"></div>
+
+    </div>
+
+    <!-- displaying the visitor log -->
+    <div class="visitor_table">
+        <h2>Visitor Log</h2>
+        <table id="visitor_log">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Purpose</th>
+                    <th>Person to Visit</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="visitor_data">
+                <!-- Visitor entries will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = '/api/visitors';
+
+        // adding new visitor
+        async function addnewvisitor(){
+            const visitor_name = document.getElementById('visitor_name').value;
+            const purpose = document.getElementById('purpose').value;   
+            const person_to_visit = document.getElementById('person_to_visit').value;
+            const visit_date = document.getElementById('visit_date').value;
+            const status = "Inside";
+
+            if(!visitor_name || !purpose || !person_to_visit || !visit_date){
+                alert("Please fill in all fields.");
+                return;
+            }else{
+                const newVisitor = {
+                    visitor_name,
+                    purpose,
+                    person_to_visit,
+                    visit_date,
+                    status
+                }
+
+                try{
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(newVisitor)
+                    });
+
+                    if(res.ok){
+                        alert("Visitor added successfully!");
+
+                        document.getElementById('visitor_name').value = '';
+                        document.getElementById('purpose').value = '';
+                        document.getElementById('person_to_visit').value = '';
+                        document.getElementById('visit_date').value = '';
+                        document.getElementById('status').value = 'Inside';
+
+                        fetchAllVisitor(); // Refresh the visitor log
+                    }else{
+                        alert("Failed to add visitor.");
+                    }
+                } catch (error) {
+                    console.error('Error adding visitor:', error);
+                }
+            }
+        }
+
+        // deleting a visitor
+        async function deleteVisitor(visitorId){
+            if(!confirm("Are you sure you want to delete this visitor?")) return;
+
+            try{
+                const res = await fetch(`${API_URL}/${visitorId}`, {
+                    method: 'DELETE'
+                });
+
+                if(res.ok){
+                    alert("Visitor deleted successfully!");
+                    fetchAllVisitor(); // Refresh the visitor log
+                }else{
+                    alert("Failed to delete visitor.");
+                }
+            } catch (error) {
+                console.error('Error deleting visitor:', error);
+            }
+        }
+
+        // fetching all visitors
+        async function fetchAllVisitor(){
+            const searchMsg = document.getElementById('search-message');
+            if (searchMsg) {
+                searchMsg.innerText = '';
+            }
+
+            const searchInput = document.getElementById('search_visitors');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+
+            try{
+                const res = await fetch(API_URL);
+                let visitors = await res.json();
+
+                renderTable(visitors);
+            }catch (error) {
+                console.error('Error fetching visitors:', error);
+            }
+        }
+
+        // rendering all the visitors in the table
+        function renderTable(visitors){
+            const tableBody = document.getElementById('visitor_data');
+            tableBody.innerHTML = '';
+
+            visitors.forEach(visitor => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${visitor.id}</td>
+                    <td>${visitor.visitor_name}</td>
+                    <td>${visitor.purpose}</td>
+                    <td>${visitor.person_to_visit}</td>
+                    <td>${visitor.visit_date}</td>
+                    <td>${visitor.status}</td>
+                    <td><button onclick="deleteVisitor(${visitor.id})">Delete</button></td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // search visitors by id
+        async function searchVisitors() {
+            const searchId = document.getElementById('search_visitors').value.trim();
+            const searchMsg = document.getElementById('search-message');
+
+            if(!searchId){
+                searchMsg.textContent = 'Please enter a visitor ID to search.';
+                return;
+            }
+
+            try{
+                const res = await fetch(`${API_URL}/${searchId}`);
+
+                if(res.status === 404){
+                    searchMsg.style.color = 'red';
+                    searchMsg.innerText = 'Visitor not found.';
+                    renderTable([]);
+                    return;
+                }else{
+                    const visitor = await res.json();
+                    searchMsg.style.color = 'green';
+                    searchMsg.innerText = 'Visitor found.';
+                    renderTable([visitor]);
+                }
+            }catch (error) {
+                console.error('Error searching visitors:', error);
+            }
+        }
+
+        window.onload = fetchAllVisitor;    
+    </script>
+    
+</body>
+</html>
